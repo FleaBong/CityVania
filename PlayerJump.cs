@@ -3,6 +3,9 @@ using System.Collections.Generic;
 using Unity.VisualScripting;
 using UnityEngine;
 
+[RequireComponent(typeof(Rigidbody2D))]
+[RequireComponent(typeof(Animator))]
+
 public class PlayerJump : MonoBehaviour
 {
 
@@ -21,24 +24,36 @@ public class PlayerJump : MonoBehaviour
 
     [Header("Components")]
     private Rigidbody2D rb;
+    private Animator myAnimator;
 
 
     private void Start()
     {
         rb = GetComponent<Rigidbody2D>();
+        myAnimator = GetComponent<Animator>();
         jumpTimeCounter = jumpTime;
     }
 
+    // myAnimator.SetBool("falling", true);
+    //myAnimator.SetBool("falling", false);
+
+       // myAnimator.SetTrigger("jump");
+       // myAnimator.ResetTrigger("jump");
+
+
     private void Update()
-        //what it means to be grounded
     {
+        //what it means to be grounded
         grounded = Physics2D.OverlapCircle(groundCheck.position,radOCircle,whatIsGround);
 
         if (grounded)
         {
             jumpTimeCounter = jumpTime;
+            myAnimator.ResetTrigger("jump");
+            myAnimator.SetBool("falling", false);
         }
 
+       
 
         //if we press jump button
         if (Input.GetButtonDown("Jump") && grounded)
@@ -46,6 +61,8 @@ public class PlayerJump : MonoBehaviour
             //jump !!
             rb.velocity = new Vector2(rb.velocity.x, jumpforce);
             stoppedJumping = false;
+            //tell animator to play jump anim
+            myAnimator.SetTrigger("jump");
         }
 
         //if we hold jump button
@@ -54,14 +71,22 @@ public class PlayerJump : MonoBehaviour
                       //jump !!
             rb.velocity = new Vector2(rb.velocity.x, jumpforce);
             jumpTimeCounter -= Time.deltaTime;
-            
+            myAnimator.SetTrigger("jump");
+
         }
 
         //if we release the jump button
         if (Input.GetButtonUp("Jump"))
         {
             jumpTimeCounter = 0;
-            stoppedJumping = true; 
+            stoppedJumping = true;
+            myAnimator.SetBool("falling", true);
+            myAnimator.ResetTrigger("jump");
+        }
+
+        if (rb.velocity.y < 0)
+        {
+            myAnimator.SetBool("falling", true);
         }
     }
 
@@ -70,5 +95,20 @@ public class PlayerJump : MonoBehaviour
         Gizmos.DrawSphere(groundCheck.position, radOCircle);
     }
 
-   
+    private void FixedUpdate()
+    {
+        HandleLayers(); 
+    }
+
+    private void HandleLayers()
+    {
+        if (!grounded)
+        {
+            myAnimator.SetLayerWeight(1, 1);
+        }
+        else
+        {
+            myAnimator.SetLayerWeight(1, 0);
+        }
+    }
 }
